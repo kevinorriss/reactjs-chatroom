@@ -1,0 +1,106 @@
+.chatroom__container {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.chatroom__sidebar {
+    width: 20rem;
+    background-color: dimgray;
+    display: flex;
+    flex-direction: column;
+}
+
+.chatroom__main {
+    flex-grow: 1;
+    background-color: whitesmoke;
+    display: flex;
+    flex-direction: column;
+}
+
+.chatroom__title {
+    font-weight: bolder;
+    color: whitesmoke;
+    font-size: x-large;
+    margin: 1rem 0rem 0rem 0rem;
+    text-align: center;
+}
+
+.chatroom__subtitle {
+    color: lightgray;
+    margin: 0rem 0rem 1rem 0rem;
+    text-align: center;
+}
+
+.chatroom__members {
+    flex-grow: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    background-color: grey;
+    padding-top: 0.5rem;
+}
+
+.chatroom__member {
+    background-color: lightgrey;
+    padding: 0.5rem 0.5rem;
+    margin: 0rem 0.5rem 0.25rem 0.5rem;
+    border-radius: 0.2rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chatroom__chat {
+    flex-grow: 1;
+    padding: 0.25rem 1rem 1rem 1rem;
+    overflow-y: auto;
+    height: 0;
+}
+
+.chatroom__message {
+    background-color: white;
+    margin-top: 0.75rem;
+    margin-right: 5rem;
+    padding: 0.75rem 0.75rem 0.75rem 0.75rem;
+    box-shadow: 0.05rem 0.05rem 0.3rem gray;
+    border-radius: 0.25rem;
+}
+
+.chatroom__message--me {
+    margin-right: 0rem;
+    margin-left: 5rem;
+}
+
+.chatroom__message h5 {
+    font-size: x-small;
+    margin: 0;
+    font-weight: bolder;
+}
+
+.chatroom__message p {
+    margin: 0.3rem 0 0 0;
+}
+
+.chatroom__input {
+    padding: 1rem;
+    display: flex;
+    flex-direction: row;
+}
+
+.chatroom__input input {
+    flex-grow: 1;
+    margin-right: 1rem;
+    padding: 0.8rem;
+}
+
+.chatroom__input button {
+    background-color: dimgray;
+    color: whitesmoke;
+    font-weight: bold;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    border: none;
+}

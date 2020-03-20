@@ -1,0 +1,11 @@
+{
+  "name": "@kevinorriss/chatroom-socket",
+  "version": "1.0.0",
+  "main": "src/Socket.js",
+  "author": "Kevin Orriss <kevinorriss@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "dependencies": {
+    "socket.io": "^2.3.0"
+  }
+}
