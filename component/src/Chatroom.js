@@ -17,14 +17,22 @@ class Chatroom extends React.Component {
 
         // initialise the state
         this.state = {
-            usernames: [],
-            messages: []
+            usernames: ['Kevin'],
+            messages: [
+                {notification:true, text:'this is a notification'},
+                { username: 'Kevin', text: 'This is Kevins message' },
+                { username: 'Developer', text: 'This is the developer message' },
+                { username: 'Kevin', text: 'This is Kevins message' },
+                { notification: true, text: 'this is a notification' },
+            ]
         }
     }
 
     componentDidMount() {
         // setup the event listeners
         this.socket.on('roomData', this.onRoomData)
+        this.socket.on('userJoined', this.onUserJoined)
+        this.socket.on('userLeft', this.onUserLeft)
         this.socket.on('message', this.onMessage)
 
         // emit a join event, sending the users username
@@ -41,11 +49,20 @@ class Chatroom extends React.Component {
     }
 
     onUserJoined({username}) {
-        console.log(`${username} has joined`)
+        console.log(`${username} joined`)
+        this.setState((prevState) => ({
+            ...prevState,
+            usernames: prevState.usernames.concat(username).filter((username, index, array) => array.indexOf(username) === index),
+            messages: prevState.messages.concat({ notification: true, text: `${username} has joined` })
+        }))
     }
 
     onUserLeft({ username }) {
-        console.log(`${username} has left`)
+        this.setState((prevState) => ({
+            ...prevState,
+            usernames: prevState.usernames.filter((u, index, array) => u !== username && array.indexOf(u) === index),
+            messages: prevState.messages.concat({notification: true, text: `${username} has left` })
+        }))
     }
 
     onMessage(message) {
@@ -54,6 +71,10 @@ class Chatroom extends React.Component {
         //     ...prevState,
         //     messages: prevState.messages.concat(message)
         // }))
+    }
+
+    sendMessage() {
+        console.log('TODO: send message')
     }
 
     render() {
@@ -73,19 +94,30 @@ class Chatroom extends React.Component {
                         {this.state.messages.map((m, index) => {
                             if (m.notification) {
                                 return (
-                                    <div key={index} className="chatroom__notification">{m.message}</div>
+                                    <p key={index} className="chatroom__notification">{m.text}</p>
                                 )
                             }
                             else {
+                                let className = "chatroom__message"
+                                if (m.username === this.props.username) {
+                                    className = className.concat(" chatroom__message--me")
+                                }
+
                                 return (
-                                    <p key={index}>{m.message}</p>
+                                    <div key={index} className={className}>
+                                        <h5>{m.username}</h5>
+                                        <p>{m.text}</p>
+                                    </div>
                                 )
                             }
                         })}
                     </div>
                     <div className="chatroom__input">
-                        <input type="text" placeholder="Type a message" />
-                        <button>Send</button>
+                        <input onKeyPress={(e) => { if (e.key === "Enter") this.sendMessage() }}
+                            type="text"
+                            placeholder="Type a message"
+                            autoFocus={true} />
+                        <button onClick={this.sendMessage}>Send</button>
                     </div>
                 </div>
             </div>

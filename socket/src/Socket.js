@@ -20,8 +20,11 @@ class Socket {
 
     // user has joined 
     onJoin(socket, { username }) {
+        console.log(`${username} has joined`)
         // check if the user is already in the chatroom
         const index = this.users.findIndex((u) => u.username === username)
+
+        console.log(`index: ${index}`)
 
         // add the user to the array
         this.users.push({id: socket.id, username })
