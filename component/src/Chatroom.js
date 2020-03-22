@@ -11,20 +11,21 @@ class Chatroom extends React.Component {
         this.onMessage = this.onMessage.bind(this)
         this.onUserJoined = this.onUserJoined.bind(this)
         this.onUserLeft = this.onUserLeft.bind(this)
+        this.onTextChange = this.onTextChange.bind(this)
+        this.sendMessage = this.sendMessage.bind(this)
 
         // create the socket
         this.socket = io()
 
+        // get a reference to the text input
+        this.messageInput = React.createRef()
+
         // initialise the state
         this.state = {
-            usernames: ['Kevin'],
-            messages: [
-                {notification:true, text:'this is a notification'},
-                { username: 'Kevin', text: 'This is Kevins message' },
-                { username: 'Developer', text: 'This is the developer message' },
-                { username: 'Kevin', text: 'This is Kevins message' },
-                { notification: true, text: 'this is a notification' },
-            ]
+            usernames: [],
+            messages: [],
+            text: '',
+            inputDisabled: false
         }
     }
 
@@ -40,7 +41,6 @@ class Chatroom extends React.Component {
     }
 
     onRoomData({ usernames }) {
-        console.log('onRoomData')
         // set the usernames in the state
         this.setState((prevState) => ({
             ...prevState,
@@ -49,7 +49,7 @@ class Chatroom extends React.Component {
     }
 
     onUserJoined({username}) {
-        console.log(`${username} joined`)
+        // add the username and create a notification message
         this.setState((prevState) => ({
             ...prevState,
             usernames: prevState.usernames.concat(username).filter((username, index, array) => array.indexOf(username) === index),
@@ -58,6 +58,7 @@ class Chatroom extends React.Component {
     }
 
     onUserLeft({ username }) {
+        // remove the username and create a notification message
         this.setState((prevState) => ({
             ...prevState,
             usernames: prevState.usernames.filter((u, index, array) => u !== username && array.indexOf(u) === index),
@@ -66,15 +67,41 @@ class Chatroom extends React.Component {
     }
 
     onMessage(message) {
-        console.log('onMessage')
-        // this.setState((prevState) => ({
-        //     ...prevState,
-        //     messages: prevState.messages.concat(message)
-        // }))
+        // add the message to the array
+        this.setState((prevState) => ({
+            ...prevState,
+            messages: prevState.messages.concat(message)
+        }))
+    }
+
+    onTextChange(e) {
+        // store the input value in the state
+        const text = e.target.value
+        this.setState((prevState) => ({
+            ...prevState,
+            text
+        }))
     }
 
     sendMessage() {
-        console.log('TODO: send message')
+        // disable the input
+        this.setState((prevState) => ({
+            ...prevState,
+            inputDisabled: true
+        }))
+
+        // send the message and await the callback
+        this.socket.emit('message', { username: this.props.username, text: this.state.text }, () => {
+            // clear the input and enable it
+            this.setState((prevState) => ({
+                ...prevState,
+                text: '',
+                inputDisabled: false
+            }))
+
+            // focus the message input
+            this.messageInput.current.focus()
+        })
     }
 
     render() {
@@ -86,7 +113,7 @@ class Chatroom extends React.Component {
                     <div className="chatroom__members">
                         {this.state.usernames.map((username, index) => (
                             <div key={index} className="chatroom__member">{username}</div>
-                        ))} 
+                        ))}
                     </div>
                 </div>
                 <div className="chatroom__main">
@@ -116,8 +143,13 @@ class Chatroom extends React.Component {
                         <input onKeyPress={(e) => { if (e.key === "Enter") this.sendMessage() }}
                             type="text"
                             placeholder="Type a message"
-                            autoFocus={true} />
-                        <button onClick={this.sendMessage}>Send</button>
+                            disabled={this.state.inputDisabled}
+                            onChange={this.onTextChange}
+                            value={this.state.text}
+                            maxLength={500}
+                            autoFocus={true}
+                            ref={this.messageInput} />
+                        <button onClick={this.sendMessage} disabled={this.state.inputDisabled}>Send</button>
                     </div>
                 </div>
             </div>

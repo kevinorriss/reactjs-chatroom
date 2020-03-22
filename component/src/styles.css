@@ -14,7 +14,7 @@
 
 .chatroom__main {
     flex-grow: 1;
-    background-color: whitesmoke;
+    background-color: lightgray;
     display: flex;
     flex-direction: column;
 }
@@ -81,6 +81,7 @@
 .chatroom__message--me {
     margin-right: 0rem;
     margin-left: 3rem;
+    background-color: #EEE;
 }
 
 .chatroom__message h5 {

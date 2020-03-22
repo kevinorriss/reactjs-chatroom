@@ -3,6 +3,7 @@ const socketio = require('socket.io')
 class Socket {
     constructor(server) {
         this.onJoin = this.onJoin.bind(this)
+        this.onMessage = this.onMessage.bind(this)
         this.onDisconnect = this.onDisconnect.bind(this)
 
         // create the socket
@@ -13,7 +14,8 @@ class Socket {
         
         // setup the socket events when connected
         this.io.on('connection', (socket) => {
-            socket.on('join', (options, callback) => { this.onJoin(socket, options, callback) })
+            socket.on('join', (options) => { this.onJoin(socket, options) })
+            socket.on('message', this.onMessage)
             socket.on('disconnect', () => { this.onDisconnect(socket) })
         })
     }
@@ -37,8 +39,23 @@ class Socket {
 
         // send the new user the room data
         socket.emit('roomData', {
-            usernames: this.users.map((u) => u.username)
+            usernames: this.users.map((u) => u.username).filter((u, i, a) => a.indexOf(u) === i)
         })
+    }
+
+    onMessage({ username, text = '' }, callback) {
+        const trimmed = text.trim()
+        if (trimmed.length === 0) {
+            // fire callback function letting the sender know the message has been sent
+            callback()
+            return
+        }
+
+        // send the message to everyone
+        this.io.emit('message', { username, text: text.trim() })
+
+        // fire callback function letting the sender know the message has been sent
+        callback()
     }
 
     onDisconnect(socket) {
