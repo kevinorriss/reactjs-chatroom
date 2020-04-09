@@ -12,11 +12,53 @@
     flex-direction: column;
 }
 
+@media (max-width: 767px) {                  
+   .chatroom__sidebar {
+      display: none;
+   }
+}
+
 .chatroom__main {
     flex-grow: 1;
     background-color: lightgray;
     display: flex;
     flex-direction: column;
+    position: relative;
+}
+
+.chatoom__status-container {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 0.5rem;
+    background-color: lightgray;
+}
+
+.chatoom__status-icon {
+    height: 1rem;
+    width: 1rem;
+    margin-right: 0.25rem;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.chatoom__status-icon--green {
+    background-color: green;
+}
+
+.chatoom__status-icon--orange {
+    background-color: orange;
+}
+
+.chatoom__status-icon--red {
+    background-color: red;
+}
+
+.chatoom__status {
+    font-size: 0.75rem;
+    line-height: 1rem;
 }
 
 .chatroom__title {

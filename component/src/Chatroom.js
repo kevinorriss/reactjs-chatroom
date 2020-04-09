@@ -1,21 +1,22 @@
 import React from 'react'
-import io from 'socket.io-client';
+import io from 'socket.io-client'
+import { EventType, ErrorType } from '@kevinorriss/chatroom-types'
+import Chat from './Chat'
 import './styles.css'
 
 class Chatroom extends React.Component {
     constructor(props) {
         super(props)
 
-        // bind this to the functions
-        this.onRoomData = this.onRoomData.bind(this)
-        this.onMessage = this.onMessage.bind(this)
+        // bind the functions
+        this.setStatus = this.setStatus.bind(this)
+        this.onConnect = this.onConnect.bind(this)
+        this.onJoinAcknowledgement = this.onJoinAcknowledgement.bind(this)
         this.onUserJoined = this.onUserJoined.bind(this)
+        this.onMessage = this.onMessage.bind(this)
         this.onUserLeft = this.onUserLeft.bind(this)
         this.onTextChange = this.onTextChange.bind(this)
         this.sendMessage = this.sendMessage.bind(this)
-
-        // create the socket
-        this.socket = io()
 
         // get a reference to the text input
         this.messageInput = React.createRef()
@@ -25,26 +26,86 @@ class Chatroom extends React.Component {
             usernames: [],
             messages: [],
             text: '',
-            inputDisabled: false
+            inputDisabled: true,
+            userId: undefined,
+            error: undefined,
+            status: {
+                icon: 'orange',
+                text: 'connecting...'
+            }
         }
     }
 
     componentDidMount() {
-        // setup the event listeners
-        this.socket.on('roomData', this.onRoomData)
-        this.socket.on('userJoined', this.onUserJoined)
-        this.socket.on('userLeft', this.onUserLeft)
-        this.socket.on('message', this.onMessage)
 
-        // emit a join event, sending the users username
-        this.socket.emit('join', { username: this.props.username })
+        // create the socket
+        // TODO pass this in via params
+        // TODO error handle the connect
+        // TODO handle disconnect
+        this.socket = io('http://localhost:5000', { path: '/socketio/chatroom' })
+
+        // setup the event listeners
+        this.socket.on('connect', this.onConnect)
+        this.socket.on('connect_error', () => { this.setStatus('red', 'connection error') })
+        this.socket.on('connect_timeout', () => { this.setStatus('red', 'connection timeout') })
+        this.socket.on('error', () => { this.setStatus('red', 'error') })
+        this.socket.on('disconnect', () => { this.setStatus('red', 'disconnected') })
+        this.socket.on('reconnect', () => { this.setStatus('green', 'reconnected') })
+        this.socket.on('reconnect_attempt', (attempt) => { this.setStatus('orange', `reconnection attempt ${attempt}...`) })
+        this.socket.on('reconnecting', (attempt) => { this.setStatus('orange', `reconnection attempt ${attempt}...`) })
+        this.socket.on('reconnect_error', () => { this.setStatus('red', 'reconnection error') })
+        this.socket.on('reconnect_failed', () => { this.setStatus('red', 'reconnection error') })
+
+        this.socket.on(EventType.USER_JOINED, this.onUserJoined)
+        this.socket.on(EventType.USER_LEFT, this.onUserLeft)
+        this.socket.on(EventType.MESSAGE, this.onMessage)
+        this.socket.on('disconnect', () => {
+            this.setState((prevState) => ({
+                ...prevState,
+                userId: undefined
+            }))
+        })
     }
 
-    onRoomData({ usernames }) {
+    onConnect() {
+        // update the status
+        this.setStatus('orange', 'joining...', () => {
+            // emit a join event, sending the users username
+            this.socket.emit(
+                EventType.JOIN,
+                { username: this.props.username },
+                this.onJoinAcknowledgement
+            )
+        })
+    }
+
+    setStatus(icon, text, callback) {
+        // update the status
+        this.setState((prevState) => ({
+            ...prevState,
+            inputDisabled: icon !== 'green',
+            status: { icon, text }
+        }), callback)
+    }
+
+    onJoinAcknowledgement(data) {
+        // check for an error in joining
+        if (data.error) {
+            this.setStatus('red', 'join error')
+            return
+        }
+
         // set the usernames in the state
         this.setState((prevState) => ({
             ...prevState,
-            usernames
+            usernames: data.room.usernames,
+            messages: prevState.messages.concat({ notification: true, text: `Welcome ${data.user.username}` }),
+            userId: data.user.id,
+            inputDisabled: false,
+            status: {
+                icon: 'green',
+                text: 'online'
+            }
         }))
     }
 
@@ -91,7 +152,12 @@ class Chatroom extends React.Component {
         }))
 
         // send the message and await the callback
-        this.socket.emit('message', { username: this.props.username, text: this.state.text }, () => {
+        this.socket.emit(EventType.MESSAGE, { userId: this.state.userId, text: this.state.text }, (data = {}) => {
+            if (data.error) {
+                this.setStatus('red', 'message error')
+                return
+            }
+
             // clear the input and enable it
             this.setState((prevState) => ({
                 ...prevState,
@@ -117,28 +183,11 @@ class Chatroom extends React.Component {
                     </div>
                 </div>
                 <div className="chatroom__main">
-                    <div className="chatroom__chat">
-                        {this.state.messages.map((m, index) => {
-                            if (m.notification) {
-                                return (
-                                    <p key={index} className="chatroom__notification">{m.text}</p>
-                                )
-                            }
-                            else {
-                                let className = "chatroom__message"
-                                if (m.username === this.props.username) {
-                                    className = className.concat(" chatroom__message--me")
-                                }
-
-                                return (
-                                    <div key={index} className={className}>
-                                        <h5>{m.username}</h5>
-                                        <p>{m.text}</p>
-                                    </div>
-                                )
-                            }
-                        })}
+                    <div className="chatoom__status-container">
+                        <div className={`chatoom__status-icon chatoom__status-icon--${this.state.status.icon}`} />
+                        <span className="chatoom__status">{this.state.status.text}</span>
                     </div>
+                    <Chat className="chatroom__chat" messages={this.state.messages} username={this.props.username}/>
                     <div className="chatroom__input">
                         <input onKeyPress={(e) => { if (e.key === "Enter") this.sendMessage() }}
                             type="text"
