@@ -11,7 +11,7 @@ class Chatroom extends React.Component {
         // bind the functions
         this.setStatus = this.setStatus.bind(this)
         this.onConnect = this.onConnect.bind(this)
-        this.onJoinAcknowledgement = this.onJoinAcknowledgement.bind(this)
+        this.onRoomData = this.onRoomData.bind(this)
         this.onUserJoined = this.onUserJoined.bind(this)
         this.onMessage = this.onMessage.bind(this)
         this.onUserLeft = this.onUserLeft.bind(this)
@@ -27,7 +27,6 @@ class Chatroom extends React.Component {
             messages: [],
             text: '',
             inputDisabled: true,
-            userId: undefined,
             error: undefined,
             status: {
                 icon: 'orange',
@@ -37,46 +36,45 @@ class Chatroom extends React.Component {
     }
 
     componentDidMount() {
-
         // create the socket
-        // TODO pass this in via params
-        // TODO error handle the connect
-        // TODO handle disconnect
-        this.socket = io('http://localhost:5000', { path: '/socketio/chatroom' })
+        this.socket = io(this.props.uri, { path: this.props.path })
 
-        // setup the event listeners
+        // setup socketio event listeners
         this.socket.on('connect', this.onConnect)
+        this.socket.on('authenticated', () => { this.setStatus('orange', 'waiting for room data...') })
         this.socket.on('connect_error', () => { this.setStatus('red', 'connection error') })
         this.socket.on('connect_timeout', () => { this.setStatus('red', 'connection timeout') })
-        this.socket.on('error', () => { this.setStatus('red', 'error') })
-        this.socket.on('disconnect', () => { this.setStatus('red', 'disconnected') })
+        this.socket.on('error', (error) => { this.setStatus('red', 'error'); console.error(error) })
         this.socket.on('reconnect', () => { this.setStatus('green', 'reconnected') })
         this.socket.on('reconnect_attempt', (attempt) => { this.setStatus('orange', `reconnection attempt ${attempt}...`) })
         this.socket.on('reconnecting', (attempt) => { this.setStatus('orange', `reconnection attempt ${attempt}...`) })
         this.socket.on('reconnect_error', () => { this.setStatus('red', 'reconnection error') })
         this.socket.on('reconnect_failed', () => { this.setStatus('red', 'reconnection error') })
+        this.socket.on('disconnect', () => { this.setStatus('red', 'disconnected') })
+        this.socket.on('unauthorized', () => { this.setStatus('red', 'unauthorized') })
 
+        // setup chatroom event listeners
+        this.socket.on(EventType.ROOM_DATA, this.onRoomData)
         this.socket.on(EventType.USER_JOINED, this.onUserJoined)
         this.socket.on(EventType.USER_LEFT, this.onUserLeft)
         this.socket.on(EventType.MESSAGE, this.onMessage)
-        this.socket.on('disconnect', () => {
-            this.setState((prevState) => ({
-                ...prevState,
-                userId: undefined
-            }))
-        })
     }
 
     onConnect() {
         // update the status
-        this.setStatus('orange', 'joining...', () => {
-            // emit a join event, sending the users username
-            this.socket.emit(
-                EventType.JOIN,
-                { username: this.props.username },
-                this.onJoinAcknowledgement
-            )
+        this.setStatus('orange', 'authenticating...', () => {
+            // send authentication token to the server
+            this.socket.emit('authenticate', { token: this.props.token })
         })
+    }
+
+    onRoomData(data) {
+        // set the usernames in the state
+        this.setState((prevState) => ({
+            ...prevState,
+            usernames: data.room.usernames,
+            messages: prevState.messages.concat({ notification: true, text: `Welcome ${data.username}` })
+        }), this.setStatus('green', 'online'))
     }
 
     setStatus(icon, text, callback) {
@@ -86,27 +84,6 @@ class Chatroom extends React.Component {
             inputDisabled: icon !== 'green',
             status: { icon, text }
         }), callback)
-    }
-
-    onJoinAcknowledgement(data) {
-        // check for an error in joining
-        if (data.error) {
-            this.setStatus('red', 'join error')
-            return
-        }
-
-        // set the usernames in the state
-        this.setState((prevState) => ({
-            ...prevState,
-            usernames: data.room.usernames,
-            messages: prevState.messages.concat({ notification: true, text: `Welcome ${data.user.username}` }),
-            userId: data.user.id,
-            inputDisabled: false,
-            status: {
-                icon: 'green',
-                text: 'online'
-            }
-        }))
     }
 
     onUserJoined({username}) {

@@ -1,5 +1,5 @@
 const EventType = {
-    JOIN: 'join',
+    ROOM_DATA: 'roomdata',
     MESSAGE: 'message',
     USER_JOINED: 'userjoined',
     USER_LEFT: 'userleft'
