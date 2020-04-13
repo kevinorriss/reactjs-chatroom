@@ -3,7 +3,7 @@ var socketioJwt = require('socketio-jwt')
 const { EventType, ErrorType } = require('@kevinorriss/chatroom-types')
 
 class Socket {
-    constructor(path = '/socket.io', secret, getUser) {
+    constructor(path = '/socket.io', secret) {
         // bind the functions
         this.onMessage = this.onMessage.bind(this)
         this.onDisconnect = this.onDisconnect.bind(this)
@@ -18,46 +18,38 @@ class Socket {
         // add default events when a new socket connects
         this.io.sockets
             .on('connection', socketioJwt.authorize({ secret, timeout: 15000, callback: false }))
-            .on('authenticated', (socket) => {this.onAuthenticated(socket, getUser) })
+            .on('authenticated', this.onAuthenticated)
     }
 
-    onAuthenticated(socket, getUser) {
-        // call the promise to get the username
-        getUser(socket.decoded_token)
-            // resolved
-            .then((username) => {
-                // add the chatroom events once authenticated
-                socket.on(EventType.MESSAGE, (options, callback) => {
-                    this.onMessage(options, callback)
-                })
-                socket.on('disconnect', () => { this.onDisconnect(socket) })
+    onAuthenticated(socket) {
+        const username = socket.decoded_token.username
 
-                // check if the user is already in the chatroom
-                const index = this.users.findIndex((u) => u.username === username)
+        // add the chatroom events once authenticated
+        socket.on(EventType.MESSAGE, (options, callback) => {
+            this.onMessage(options, callback)
+        })
+        socket.on('disconnect', () => { this.onDisconnect(socket) })
 
-                // add the user to the array
-                this.users.push({ socketId: socket.id, username })
+        // check if the user is already in the chatroom
+        const index = this.users.findIndex((u) => u.username === username)
 
-                // if the username is new, broadcast to other users
-                if (index === -1) {
-                    socket.broadcast.emit(EventType.USER_JOINED, {
-                        username,
-                        createdAt: new Date().getTime()
-                    })
-                }
+        // add the user to the array
+        this.users.push({ socketId: socket.id, username })
 
-                socket.emit(EventType.ROOM_DATA, {
-                    username,
-                    room: {
-                        usernames: this.users.map((u) => u.username).filter((u, i, a) => a.indexOf(u) === i)
-                    }
-                })
+        // if the username is new, broadcast to other users
+        if (index === -1) {
+            socket.broadcast.emit(EventType.USER_JOINED, {
+                username,
+                createdAt: new Date().getTime()
             })
-            // rejected
-            .catch((err) => {
-                // TODO
-                console.error(err)
-            })
+        }
+
+        socket.emit(EventType.ROOM_DATA, {
+            username,
+            room: {
+                usernames: this.users.map((u) => u.username).filter((u, i, a) => a.indexOf(u) === i)
+            }
+        })
     }
 
     onMessage({ userId, text }, callback) {

@@ -37,7 +37,7 @@ class Chatroom extends React.Component {
 
     componentDidMount() {
         // create the socket
-        this.socket = io(this.props.uri, { path: this.props.path })
+        this.socket = io(this.props.uri, { path: this.props.path, transports: ['websocket'] })
 
         // setup socketio event listeners
         this.socket.on('connect', this.onConnect)
