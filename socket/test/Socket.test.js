@@ -7,92 +7,239 @@ const { EventType, ErrorType } = require('@kevinorriss/chatroom-types')
 const SECRET = 'testsecret'
 const PATH = '/socket.io/chatroom'
 
-let clientSocket
-let existingClientSocket
+const USER_1 = 'user one'
+const USER_2 = 'user two'
+
+let clientSocket1
+let clientSocket2
+let clientSocket3
 let httpServer
 let httpServerAddr
 let chatServer
 
 // spy on the servers events
+const onAuthenticated = jest.spyOn(ChatSocket.prototype, 'onAuthenticated')
 const onMessage = jest.spyOn(ChatSocket.prototype, 'onMessage')
 
 // disable console errors for cleaner test output
 jest.spyOn(console, 'error').mockImplementation(() => { })
 
 // returns a client connection
-const connectClient = () => {
-    return io(`http://[${httpServerAddr.address}]:${httpServerAddr.port}`, {
+const connect = (auth) => {
+    const socket = io(`http://[${httpServerAddr.address}]:${httpServerAddr.port}`, {
         path: PATH,
         'reconnection delay': 0,
         'reopen delay': 0,
         'force new connection': true,
         transports: ['websocket']
     })
+
+    if (typeof auth !== 'undefined') {
+        authenticate(socket, auth.username, auth.key)
+    }
+
+    return socket
+}
+
+const authenticate = (socket, username, key = SECRET) => {
+    socket.on('connect', () => {
+        socket.emit('authenticate', { token: jwt.sign({ username }, key) })
+    })
 }
 
 /**
- * Before testing starts
+ * Run before each test
  */
-beforeAll((done) => {
+beforeEach(() => {
     // setup servers
     httpServer = http.createServer().listen()
     httpServerAddr = httpServer.address()
     chatServer = new ChatSocket(PATH, SECRET)
     chatServer.io.attach(httpServer)
-    
-    done()
-})
-
-/**
- *  After testing finished
- */
-afterAll((done) => {
-    // shut down servers
-    chatServer.io.close()
-    httpServer.close()
-    done()
-})
-
-/**
- * Run before each test
- */
-beforeEach((done) => {
-    // connect the client socket
-    clientSocket = connectClient()
-    clientSocket.emit()
-
-    existingClientSocket = undefined
-
-    // send authentication after connected
-    clientSocket.on('connect', () => {
-        clientSocket.emit('authenticate', { token: jwt.sign({ username: 'Test User' }, SECRET) })
-    })
-    // call done callback once authenticated
-    clientSocket.on('authenticated', () => {
-        done()
-    })
 })
 
 /**
  * Run after each test
  */
-afterEach((done) => {
-    // Cleanup
-    if (clientSocket.connected) {
-        clientSocket.disconnect()
+afterEach(() => {
+    // disconnect the sockets
+    if (clientSocket1 && clientSocket1.connected) {
+        clientSocket1.disconnect()
     }
-    if (existingClientSocket && existingClientSocket.connected) {
-        existingClientSocket.disconnect()
+    if (clientSocket2 && clientSocket2.connected) {
+        clientSocket2.disconnect()
     }
 
     // reset the counts of every mock
     jest.clearAllMocks()
 
-    done()
+    // shut down servers
+    chatServer.io.close()
+    httpServer.close()
+
+    // clear the sockets
+    clientSocket1 = undefined
+    clientSocket2 = undefined
 })
 
 describe('authenticate', () => {
-    test('test', () => {
+    test('Should call authenticated event with valid token', (done) => {
+        // connect a client as the existing user
+        clientSocket1 = connect({username: USER_1}).on('authenticated', () => {
+
+            // mock the user joined event for existing user
+            const userJoined = jest.fn()
+            clientSocket1.on(EventType.USER_JOINED, userJoined)
+
+            // connect the new client
+            const roomData = jest.fn()
+            clientSocket2 = connect({ username: USER_2 })
+                .on(EventType.ROOM_DATA, roomData)
+                .on('authenticated', () => {
+            
+                // server authenticated event should have been called twice
+                expect(onAuthenticated).toHaveBeenCalledTimes(2)
+
+                // get the decoded token of the second connection and the socket ID
+                const { decoded_token, id: socketId } = onAuthenticated.mock.calls[1][0]
+
+                // socket should contain decoded token
+                expect(decoded_token).toEqual({
+                    username: USER_2,
+                    iat: expect.any(Number)
+                })
+
+                // expect the socket ID to be a string
+                expect(typeof socketId).toEqual('string')
+
+                // expect the servers user array to contain the socket data
+                expect(chatServer.users).toEqual([
+                    {
+                        socketId: expect.any(String),
+                        username: USER_1
+                    }, {
+                        socketId,
+                        username: USER_2
+                    }
+                ])
+
+                // wait a little for the events to fire
+                setTimeout(() => {
+                    // existing user should be informed of new user
+                    expect(userJoined).toHaveBeenCalledTimes(1)
+
+                    // existing user should be sent new username
+                    expect(userJoined.mock.calls[0][0]).toEqual({
+                        username: USER_2,
+                        createdAt: expect.any(Number)
+                    })
+
+                    // new user should have got room data event
+                    expect(roomData).toHaveBeenCalledTimes(1)
+
+                    // room data should be what we expect
+                    expect(roomData.mock.calls[0][0]).toEqual({
+                        username: USER_2,
+                        room: {
+                            usernames: [USER_1, USER_2]
+                        }
+                    })
+
+                    // tell jest we're done
+                    done()
+                }, 50)
+            })
+        })
+    })
+
+    test('Should reject missing token authentication', (done) => {
+        // connect a client
+        clientSocket1 = connect()
+            // authenticate with no token
+            .on('connect', () => {
+                clientSocket1.emit('authenticate', { })
+            // wait for the unauthorized event
+            }).on('unauthorized', (error) => {
+                // expect invalid token error code
+                expect(error.data.code).toEqual('invalid_token')
+
+                // tell jest we're done
+                done()
+            })
+    })
+
+    test('Should reject authentication token with incorrect secret', (done) => {
+        // connect a client with an invalid key
+        clientSocket1 = connect({ username: USER_1, key: `${SECRET}123`})
+            .on('unauthorized', (error) => {
+                // expect invalid token error code
+                expect(error.data.code).toEqual('invalid_token')
+
+                // tell jest we're done
+                done()
+            })
+    })
+
+    test('Should reject token with missing username', (done) => {
+        // mock the authenticated and error events
+        const onAuthenticated = jest.fn()
+        const onUnauthorized = jest.fn()
+        const onRoomData = jest.fn()
+
+        // connect a client without providing a username
+        clientSocket1 = connect({})
+            .on('authenticated', onAuthenticated)
+            .on('unauthorized', onUnauthorized)
+            .on(EventType.ROOM_DATA, onRoomData)
+        
+        setTimeout(() => {
+            // socket will be authenticated because secret is valid
+            expect(onAuthenticated).toHaveBeenCalledTimes(1)
+
+            // unauthorized called because of missing username
+            expect(onUnauthorized).toHaveBeenCalledTimes(1)
+            expect(onUnauthorized.mock.calls[0][0]).toEqual('username required')
+
+            // room data should not be sent
+            expect(onRoomData).toHaveBeenCalledTimes(0)
+
+            // server users array should be empty
+            expect(chatServer.users).toEqual([])
+            
+            // tell jest we're done
+            done()
+        }, 50)
+    })
+
+    test('Unauthenticated user should not receive messages', (done) => {
+        // mock user one events
+        const userOneUserJoined = jest.fn()
+        const userOneMessaged = jest.fn()
+
+        // connect an existing user and spy on events
+        clientSocket1 = connect({ username: USER_1 })
+            .on(EventType.MESSAGE, userOneMessaged)
+            .on(EventType.USER_JOINED, userOneUserJoined)
+        
+        // once first user is connected
+        clientSocket1.on('authenticated', () => {
+            // connect a user with missing username
+            clientSocket2 = connect({})
+                
+            // wait for the second user to be unauthorized
+            clientSocket2.on('unauthorized', () => {
+
+                // clientSocket1.emit(EventType.MESSAGE)
+
+                // set a short delay
+                setTimeout(() => {
+                    expect(userOneUserJoined).toHaveBeenCalledTimes(0)
+
+                    // tell jest we're done
+                    done()
+                }, 50)
+            })
+        })
     })
 })
 
@@ -100,10 +247,10 @@ describe('authenticate', () => {
     test('Should add new user to emtpy room', (done) => {
         // create a mock function and add to the client join listener
         const userJoined = jest.fn()
-        clientSocket.once(EventType.USER_JOINED, userJoined)
+        clientSocket1.once(EventType.USER_JOINED, userJoined)
 
         // emit a join message to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Client Username' }, (params) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Client Username' }, (params) => {
             // server should have added new user to array
             expect(chatServer.users).toEqual([{
                 id: expect.any(String),
@@ -131,16 +278,16 @@ describe('authenticate', () => {
 
     test('Should add new user to non-emtpy room', (done) => {
         // connect the existing user
-        existingClientSocket = connectClient()
+        clientSocket2 = connect()
 
         // setup spies on the existing user
         const existingUserJoined = jest.fn()
-        existingClientSocket.on(EventType.USER_JOINED, existingUserJoined)
+        clientSocket2.on(EventType.USER_JOINED, existingUserJoined)
 
-        existingClientSocket.emit(EventType.JOIN, { username: 'Existing Username' }, () => {
+        clientSocket2.emit(EventType.JOIN, { username: 'Existing Username' }, () => {
             
             // connect the new user
-            clientSocket.emit(EventType.JOIN, { username: 'New Username' }, (params) => {
+            clientSocket1.emit(EventType.JOIN, { username: 'New Username' }, (params) => {
                 
                 // new user should be sent existing usernames
                 expect(params).toEqual({
@@ -168,7 +315,7 @@ describe('authenticate', () => {
 
     test('Should handle missing username', (done) => {
         // emit a join message to the server
-        clientSocket.emit(EventType.JOIN, {}, (params) => {
+        clientSocket1.emit(EventType.JOIN, {}, (params) => {
 
             // should return error message
             expect(params).toEqual({
@@ -186,7 +333,7 @@ describe('authenticate', () => {
 
     test('Should handle incorrent username datatype', (done) => {
         // emit a join message to the server
-        clientSocket.emit(EventType.JOIN, { username: 123 }, (params) => {
+        clientSocket1.emit(EventType.JOIN, { username: 123 }, (params) => {
 
             // should return error message
             expect(params).toEqual({
@@ -204,7 +351,7 @@ describe('authenticate', () => {
 
     test('Should handle blank username', (done) => {
         // emit a join message to the server
-        clientSocket.emit(EventType.JOIN, { username: '' }, (params) => {
+        clientSocket1.emit(EventType.JOIN, { username: '' }, (params) => {
 
             // should return error message
             expect(params).toEqual({
@@ -222,7 +369,7 @@ describe('authenticate', () => {
 
     test('Should trim username', (done) => {
         // emit a join message to the server
-        clientSocket.emit(EventType.JOIN, { username: '    Test User    ' }, (params) => {
+        clientSocket1.emit(EventType.JOIN, { username: '    Test User    ' }, (params) => {
 
             // callback should be called with the username trimmed
             expect(params).toEqual({
@@ -240,17 +387,17 @@ describe('authenticate', () => {
 
     test('Should handle duplicate usernames', (done) => {
         // connect the existing user
-        existingClientSocket = connectClient()
+        clientSocket2 = connect()
 
         // spy on the existing user join event
         const existingUserJoined = jest.fn()
-        existingClientSocket.once(EventType.USER_JOINED, existingUserJoined)
+        clientSocket2.once(EventType.USER_JOINED, existingUserJoined)
 
         // connect the existing user
-        existingClientSocket.emit(EventType.JOIN, { username: 'Existing User' }, () => {
+        clientSocket2.emit(EventType.JOIN, { username: 'Existing User' }, () => {
 
             // connect the same username again
-            clientSocket.emit(EventType.JOIN, { username: 'Existing User' }, (params) => {
+            clientSocket1.emit(EventType.JOIN, { username: 'Existing User' }, (params) => {
 
                 // server should store both usernames with different IDs
                 expect(chatServer.users).toEqual([
@@ -286,7 +433,7 @@ describe('authenticate', () => {
         onJoin.mockImplementationOnce(() => { throw new Error('forced exception') })
 
         // connect the user
-        clientSocket.emit(EventType.JOIN, { username: 'Client Username' }, (params) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Client Username' }, (params) => {
             
             // expect the callback to provide error message
             expect(params).toEqual({
@@ -305,13 +452,13 @@ describe('authenticate', () => {
 describe('message', () => {
     test('Should receive a message', (done) => {
         // connect the existing user
-        existingClientSocket = connectClient()
+        clientSocket2 = connect()
 
         // connect the existing user
-        existingClientSocket.emit(EventType.JOIN, { username: 'Existing User' }, () => {
+        clientSocket2.emit(EventType.JOIN, { username: 'Existing User' }, () => {
 
             // connect the new user
-            clientSocket.emit(EventType.JOIN, { username: 'New User' }, (params) => {
+            clientSocket1.emit(EventType.JOIN, { username: 'New User' }, (params) => {
 
                 // create the mock functions
                 const onClientMessage = jest.fn()
@@ -319,11 +466,11 @@ describe('message', () => {
                 const messageCallback = jest.fn()
 
                 // mock both clients message events
-                clientSocket.once(EventType.MESSAGE, onClientMessage)
-                existingClientSocket.once(EventType.MESSAGE, onExistingClientMessage)
+                clientSocket1.once(EventType.MESSAGE, onClientMessage)
+                clientSocket2.once(EventType.MESSAGE, onExistingClientMessage)
                 
                 // send a message
-                clientSocket.emit(EventType.MESSAGE, { userId: params.user.id, text: 'Test Message' }, messageCallback)
+                clientSocket1.emit(EventType.MESSAGE, { userId: params.user.id, text: 'Test Message' }, messageCallback)
 
                 setTimeout(() => {
                     // callback function should be called
@@ -353,14 +500,14 @@ describe('message', () => {
 
     test('Should handle missing user ID', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, () => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, () => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message without user ID
-            clientSocket.emit(EventType.MESSAGE, { text: 'Test Message' }, (params) => {
+            clientSocket1.emit(EventType.MESSAGE, { text: 'Test Message' }, (params) => {
                 
                 // expect error callback
                 expect(params).toEqual({
@@ -384,14 +531,14 @@ describe('message', () => {
 
     test('Should handle invalid user ID', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, () => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, () => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message with invalid user ID
-            clientSocket.emit(EventType.MESSAGE, { userId: 123, text: 'Test Message' }, (params) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: 123, text: 'Test Message' }, (params) => {
 
                 // expect error callback
                 expect(params).toEqual({
@@ -415,14 +562,14 @@ describe('message', () => {
 
     test('Should handle missing text', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message without text
-            clientSocket.emit(EventType.MESSAGE, { userId: params1.user.id }, (params2) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: params1.user.id }, (params2) => {
 
                 // expect error callback
                 expect(params2).toEqual({
@@ -446,14 +593,14 @@ describe('message', () => {
 
     test('Should handle invalid text', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message with invalid text
-            clientSocket.emit(EventType.MESSAGE, { userId: params1.user.id, text: 123 }, (params2) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: params1.user.id, text: 123 }, (params2) => {
 
                 // expect error callback
                 expect(params2).toEqual({
@@ -477,14 +624,14 @@ describe('message', () => {
 
     test('Should handle not finding username by ID', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, () => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, () => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message without text
-            clientSocket.emit(EventType.MESSAGE, { userId: 'fakeuserid', text: 'Test Message' }, (params) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: 'fakeuserid', text: 'Test Message' }, (params) => {
 
                 // expect error callback
                 expect(params).toEqual({
@@ -507,14 +654,14 @@ describe('message', () => {
 
     test('Should trim text', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message without text
-            clientSocket.emit(EventType.MESSAGE, { userId: params1.user.id, text: '   Test Message   ' }, (params2) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: params1.user.id, text: '   Test Message   ' }, (params2) => {
 
                 // expect callback with no params
                 expect(params2).toBeUndefined()
@@ -533,14 +680,14 @@ describe('message', () => {
 
     test('Should ignore empty text', (done) => {
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
 
             // add mock functions to socket
             const onClientMessage = jest.fn()
-            clientSocket.on(EventType.MESSAGE, onClientMessage)
+            clientSocket1.on(EventType.MESSAGE, onClientMessage)
 
             // send a message without text
-            clientSocket.emit(EventType.MESSAGE, { userId: params1.user.id, text: '' }, (params2) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: params1.user.id, text: '' }, (params2) => {
 
                 // expect callback with no params
                 expect(params2).toBeUndefined()
@@ -561,10 +708,10 @@ describe('message', () => {
         onMessage.mockImplementationOnce(() => { throw new Error('forced exception') })
 
         // connect user to the server
-        clientSocket.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
+        clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, (params1) => {
 
             // send a message without text
-            clientSocket.emit(EventType.MESSAGE, { userId: params1.user.id, text: 'Test Message' }, (params2) => {
+            clientSocket1.emit(EventType.MESSAGE, { userId: params1.user.id, text: 'Test Message' }, (params2) => {
 
                 // callback should provide error message
                 expect(params2).toEqual({
@@ -584,17 +731,17 @@ describe('message', () => {
 describe('disconnect', () => {
     test('Should handle unique username', (done) => {
         // connect the existing user
-        existingClientSocket = connectClient()
+        clientSocket2 = connect()
 
         // add mock functions to the existing user socket
         const userLeft = jest.fn()
-        existingClientSocket.on(EventType.USER_LEFT, userLeft)
+        clientSocket2.on(EventType.USER_LEFT, userLeft)
 
         // connect existing user to the server
-        existingClientSocket.emit(EventType.JOIN, { username: 'Existing User' }, (params1) => {
+        clientSocket2.emit(EventType.JOIN, { username: 'Existing User' }, (params1) => {
         
             // connect user to the server
-            clientSocket.emit(EventType.JOIN, { username: 'Test User' }, (params2) => {
+            clientSocket1.emit(EventType.JOIN, { username: 'Test User' }, (params2) => {
                 expect(chatServer.users).toEqual([{
                     id: params1.user.id,
                     username: 'Existing User'
@@ -604,11 +751,11 @@ describe('disconnect', () => {
                 }])
 
                 // disconnect the socket
-                clientSocket.disconnect()
+                clientSocket1.disconnect()
 
                 setTimeout(() => {
                     // client socket should be disconnected
-                    expect(clientSocket.connected).toEqual(false)
+                    expect(clientSocket1.connected).toEqual(false)
 
                     // user should have been removed from the server array
                     expect(chatServer.users).toEqual([{ id: params1.user.id, username: 'Existing User' }])
@@ -626,17 +773,17 @@ describe('disconnect', () => {
 
     test('Should handle duplicate username', (done) => {
         // connect the existing user
-        existingClientSocket = connectClient()
+        clientSocket2 = connect()
 
         // add mock functions to the existing user socket
         const userLeft = jest.fn()
-        existingClientSocket.on(EventType.USER_LEFT, userLeft)
+        clientSocket2.on(EventType.USER_LEFT, userLeft)
 
         // connect existing user to the server
-        existingClientSocket.emit(EventType.JOIN, { username: 'Duplicate User' }, (params1) => {
+        clientSocket2.emit(EventType.JOIN, { username: 'Duplicate User' }, (params1) => {
 
             // connect user to the server
-            clientSocket.emit(EventType.JOIN, { username: 'Duplicate User' }, (params2) => {
+            clientSocket1.emit(EventType.JOIN, { username: 'Duplicate User' }, (params2) => {
 
                 // expect users to be in server array
                 expect(chatServer.users).toEqual([{
@@ -648,11 +795,11 @@ describe('disconnect', () => {
                 }])
 
                 // disconnect the socket
-                clientSocket.disconnect()
+                clientSocket1.disconnect()
 
                 setTimeout(() => {
                     // client socket should be disconnected
-                    expect(clientSocket.connected).toEqual(false)
+                    expect(clientSocket1.connected).toEqual(false)
 
                     // user should have been removed from the server array
                     expect(chatServer.users).toEqual([{ id: params1.user.id, username: 'Duplicate User' }])

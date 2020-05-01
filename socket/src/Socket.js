@@ -22,75 +22,62 @@ class Socket {
     }
 
     onAuthenticated(socket) {
+        // get the username from the token
         const username = socket.decoded_token.username
 
-        // add the chatroom events once authenticated
-        socket.on(EventType.MESSAGE, (options, callback) => {
-            this.onMessage(options, callback)
-        })
-        socket.on('disconnect', () => { this.onDisconnect(socket) })
-
-        // check if the user is already in the chatroom
-        const index = this.users.findIndex((u) => u.username === username)
+        // if no username was provided, emit unauthorized event and close socket
+        if (typeof username === 'undefined') {
+            socket.emit('unauthorized', 'username required', () => { 
+                socket.disconnect()
+            })
+            return
+        }
 
         // add the user to the array
         this.users.push({ socketId: socket.id, username })
 
         // if the username is new, broadcast to other users
-        if (index === -1) {
+        if (this.users.some((u) => u.username === username)) {
             socket.broadcast.emit(EventType.USER_JOINED, {
                 username,
                 createdAt: new Date().getTime()
             })
         }
 
+        // add the chatroom events once authenticated
+        socket.on(EventType.MESSAGE, (message, callback) => {
+            this.onMessage(message, callback, socket)
+        })
+        socket.on('disconnect', () => { this.onDisconnect(socket) })
+
+        // send the room data to the new socket
         socket.emit(EventType.ROOM_DATA, {
             username,
             room: {
-                usernames: this.users.map((u) => u.username).filter((u, i, a) => a.indexOf(u) === i)
+                usernames: this.users.map((u) => u.username)
+                    .filter((u, i, a) => a.indexOf(u) === i)
             }
         })
     }
 
-    onMessage({ userId, text }, callback) {
+    onMessage(message, callback, socket) {
         try {
-            // validate the user ID
-            if (typeof userId === 'undefined') {
+            // validate message
+            if (typeof message === 'undefined') {
                 callback({
                     error: {
                         code: ErrorType.PARAM_MISSING,
-                        param: 'userId',
-                        message: 'userId is undefined'
-                    }
-                })
-                return
-            } else if (typeof userId !== 'string') {
-                callback({
-                    error: {
-                        code: ErrorType.PARAM_INVALID_TYPE,
-                        param: 'userId',
-                        message: `userId of type ${typeof userId}, expecting string`
-                    }
-                })
-                return
-            }
-
-            // validate 
-            if (typeof text === 'undefined') {
-                callback({
-                    error: {
-                        code: ErrorType.PARAM_MISSING,
-                        param: 'text',
+                        param: 'message',
                         message: 'message is undefined'
                     }
                 })
                 return
-            } else if (typeof text !== 'string') {
+            } else if (typeof message !== 'string') {
                 callback({
                     error: {
                         code: ErrorType.PARAM_INVALID_TYPE,
-                        param: 'text',
-                        message: `text of type ${typeof text}, expecting string`
+                        param: 'message',
+                        message: `message of type ${typeof message}, expecting string`
                     }
                 })
                 return
