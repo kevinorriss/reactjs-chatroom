@@ -2,27 +2,22 @@
 
 A socketio server for the ReactJS chatroom
 
-## Prerequisites
-
-* [@kevinorriss/chatroom-types 1.0.1] - Enum values used by the chatroom client and server
-
 ## Installing
 
 ```
-npm install @kevinorriss/chatroom-types
 npm install @kevinorriss/chatroom-server
 ```
 
 ## Usage
 
-Import the component
-
 ```
+import ChatroomServer from '@kevinorriss/chatroom-server'
+
 const app = express()
 const httpServer = http.createServer(app)
 httpServer.listen(5000)
 
-new ChatroomServer(server, '/socketio/chatroom', 'thisismychatroomsecret')
+new ChatroomServer(httpServer, '/socketio/chatroom', 'thisismychatroomsecret')
 ```
 
 ## Tests

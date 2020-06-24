@@ -4,13 +4,11 @@ A ReactJS chatroom component using SocketIO
 
 ## Prerequisites
 
-* [@kevinorriss/chatroom-types 1.0.1] - Enum values used by the chatroom client and server
-* [@kevinorriss/chatroom-server 1.0.2] - A SocketIO server to accompany the chatroom component
+* [@kevinorriss/chatroom-server 1.0.3] - A SocketIO server to accompany the chatroom component
 
 ## Installing
 
 ```
-npm install @kevinorriss/chatroom-types
 npm install @kevinorriss/chatroom-component
 ```
 
