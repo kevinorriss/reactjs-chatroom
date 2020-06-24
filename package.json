@@ -1,10 +1,10 @@
 {
   "name": "reactjs-chatroom",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
-    "component":  "npm run --prefix component dev",
-    "server":     "npm run --prefix server start",
-    "client":     "npm run --prefix client start",
+    "component": "npm run --prefix component dev",
+    "server": "npm run --prefix server start",
+    "client": "npm run --prefix client start",
     "dev": "concurrently \"npm run server\" \"npm run component\" \"npm run client\""
   },
   "author": "Kevin Orriss <kevinorriss@gmail.com>",
@@ -12,8 +12,5 @@
   "private": true,
   "devDependencies": {
     "concurrently": "^5.1.0"
-  },
-  "dependencies": {
-    "autoscroll-react": "^3.2.0"
   }
 }
