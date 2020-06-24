@@ -1,0 +1,116 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Should render empty chat 1`] = `
+<div
+  className="chatroom__chat"
+/>
+`;
+
+exports[`Should render error message correctly 1`] = `
+<div
+  className="chatroom__chat"
+>
+  <Message
+    isError={true}
+    isMe={false}
+    isNotification={false}
+    key="0"
+    text="There has been an error!"
+  />
+</div>
+`;
+
+exports[`Should render error when message is both notification and error 1`] = `
+<div
+  className="chatroom__chat"
+>
+  <Message
+    isError={true}
+    isMe={false}
+    isNotification={true}
+    key="0"
+    text="This is an error and notification..."
+  />
+</div>
+`;
+
+exports[`Should render multiple messages in order 1`] = `
+<div
+  className="chatroom__chat"
+>
+  <Message
+    isError={false}
+    isMe={false}
+    isNotification={true}
+    key="0"
+    text="Welcome, Myself!"
+  />
+  <Message
+    isError={false}
+    isMe={true}
+    isNotification={false}
+    key="1"
+    text="Hello, World!"
+    username="Myself"
+  />
+  <Message
+    isError={false}
+    isMe={false}
+    isNotification={false}
+    key="2"
+    text="Hi there!"
+    username="Other User"
+  />
+  <Message
+    isError={true}
+    isMe={false}
+    isNotification={false}
+    key="3"
+    text="There has been an error!"
+  />
+</div>
+`;
+
+exports[`Should render notification 1`] = `
+<div
+  className="chatroom__chat"
+>
+  <Message
+    isError={false}
+    isMe={false}
+    isNotification={true}
+    key="0"
+    text="Welcome, Myself!"
+  />
+</div>
+`;
+
+exports[`Should render received message correctly 1`] = `
+<div
+  className="chatroom__chat"
+>
+  <Message
+    isError={false}
+    isMe={false}
+    isNotification={false}
+    key="0"
+    text="Hi there!"
+    username="Other User"
+  />
+</div>
+`;
+
+exports[`Should render sent message correctly 1`] = `
+<div
+  className="chatroom__chat"
+>
+  <Message
+    isError={false}
+    isMe={true}
+    isNotification={false}
+    key="0"
+    text="Hello, World!"
+    username="Myself"
+  />
+</div>
+`;

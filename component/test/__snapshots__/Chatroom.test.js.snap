@@ -1,0 +1,863 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Should apply custom title 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Test Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      0
+    </p>
+    <div
+      className="chatroom__members"
+    />
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--orange"
+      />
+      <span
+        className="chatoom__status"
+      >
+        connecting...
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={Array []}
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={true}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={true}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should connect on mount 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      1
+    </p>
+    <div
+      className="chatroom__members"
+    >
+      <div
+        className="chatroom__member"
+        key="0"
+      >
+        Test User
+      </div>
+    </div>
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--green"
+      />
+      <span
+        className="chatoom__status"
+      >
+        online
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={
+        Array [
+          Object {
+            "notification": true,
+            "text": "Welcome Test User",
+          },
+        ]
+      }
+      username="Test User"
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={false}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={false}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should handle multiple clients of the same username 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      2
+    </p>
+    <div
+      className="chatroom__members"
+    >
+      <div
+        className="chatroom__member"
+        key="0"
+      >
+        Test User
+      </div>
+      <div
+        className="chatroom__member"
+        key="1"
+      >
+        New User
+      </div>
+    </div>
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--green"
+      />
+      <span
+        className="chatoom__status"
+      >
+        online
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={
+        Array [
+          Object {
+            "notification": true,
+            "text": "Welcome Test User",
+          },
+          Object {
+            "notification": true,
+            "text": "New User has joined",
+          },
+          Object {
+            "notification": true,
+            "text": "New User has joined",
+          },
+        ]
+      }
+      username="Test User"
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={false}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={false}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should handle new user joining 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      2
+    </p>
+    <div
+      className="chatroom__members"
+    >
+      <div
+        className="chatroom__member"
+        key="0"
+      >
+        Test User
+      </div>
+      <div
+        className="chatroom__member"
+        key="1"
+      >
+        New User
+      </div>
+    </div>
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--green"
+      />
+      <span
+        className="chatoom__status"
+      >
+        online
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={
+        Array [
+          Object {
+            "notification": true,
+            "text": "Welcome Test User",
+          },
+          Object {
+            "notification": true,
+            "text": "New User has joined",
+          },
+        ]
+      }
+      username="Test User"
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={false}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={false}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should handle user leaving 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      1
+    </p>
+    <div
+      className="chatroom__members"
+    >
+      <div
+        className="chatroom__member"
+        key="0"
+      >
+        Test User
+      </div>
+    </div>
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--green"
+      />
+      <span
+        className="chatoom__status"
+      >
+        online
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={
+        Array [
+          Object {
+            "notification": true,
+            "text": "Welcome Test User",
+          },
+          Object {
+            "notification": true,
+            "text": "New User has joined",
+          },
+          Object {
+            "notification": true,
+            "text": "New User has left",
+          },
+        ]
+      }
+      username="Test User"
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={false}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={false}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should reject incorrect token 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      0
+    </p>
+    <div
+      className="chatroom__members"
+    />
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--red"
+      />
+      <span
+        className="chatoom__status"
+      >
+        unauthorized
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={Array []}
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={true}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={true}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should render initial state 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      0
+    </p>
+    <div
+      className="chatroom__members"
+    />
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--orange"
+      />
+      <span
+        className="chatoom__status"
+      >
+        connecting...
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={Array []}
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={true}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={true}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should render received message 1`] = `
+<div
+  className="chatroom__container"
+>
+  <div
+    className="chatroom__sidebar"
+  >
+    <p
+      className="chatroom__title"
+    >
+      Chat Room
+    </p>
+    <p
+      className="chatroom__subtitle"
+    >
+      Members: 
+      1
+    </p>
+    <div
+      className="chatroom__members"
+    >
+      <div
+        className="chatroom__member"
+        key="0"
+      >
+        Test User
+      </div>
+    </div>
+  </div>
+  <div
+    className="chatroom__main"
+  >
+    <div
+      className="chatoom__status-container"
+    >
+      <div
+        className="chatoom__status-icon chatoom__status-icon--green"
+      />
+      <span
+        className="chatoom__status"
+      >
+        online
+      </span>
+    </div>
+    <Chat
+      className="chatroom__chat"
+      messages={
+        Array [
+          Object {
+            "notification": true,
+            "text": "Welcome Test User",
+          },
+          Object {
+            "text": "Hello Tester!",
+            "username": "New User",
+          },
+        ]
+      }
+      username="Test User"
+    />
+    <div
+      className="chatroom__input"
+    >
+      <input
+        autoFocus={true}
+        disabled={false}
+        maxLength={500}
+        onChange={[Function]}
+        onKeyPress={[Function]}
+        placeholder="Type a message"
+        type="text"
+        value=""
+      />
+      <button
+        disabled={false}
+        onClick={[Function]}
+      >
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`Should send a message 1`] = `
+<Chatroom
+  path="/socket.io/chatroom"
+  token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IlRlc3QgVXNlciJ9._yeRUydnLTkOqBHic55jrTprT5OgaCsP6n_oEcdQyq4"
+  uri="http://[::]:7000"
+>
+  <div
+    className="chatroom__container"
+  >
+    <div
+      className="chatroom__sidebar"
+    >
+      <p
+        className="chatroom__title"
+      >
+        Chat Room
+      </p>
+      <p
+        className="chatroom__subtitle"
+      >
+        Members: 
+        1
+      </p>
+      <div
+        className="chatroom__members"
+      >
+        <div
+          className="chatroom__member"
+          key="0"
+        >
+          Test User
+        </div>
+      </div>
+    </div>
+    <div
+      className="chatroom__main"
+    >
+      <div
+        className="chatoom__status-container"
+      >
+        <div
+          className="chatoom__status-icon chatoom__status-icon--green"
+        />
+        <span
+          className="chatoom__status"
+        >
+          online
+        </span>
+      </div>
+      <Chat
+        className="chatroom__chat"
+        messages={
+          Array [
+            Object {
+              "notification": true,
+              "text": "Welcome Test User",
+            },
+          ]
+        }
+        username="Test User"
+      >
+        <div
+          className="chatroom__chat"
+        >
+          <Message
+            isError={false}
+            isMe={false}
+            isNotification={true}
+            key="0"
+            text="Welcome Test User"
+          >
+            <p
+              className="chatroom__notification"
+            >
+              Welcome Test User
+            </p>
+          </Message>
+        </div>
+      </Chat>
+      <div
+        className="chatroom__input"
+      >
+        <input
+          autoFocus={true}
+          disabled={false}
+          maxLength={500}
+          onChange={[Function]}
+          onKeyPress={[Function]}
+          placeholder="Type a message"
+          type="text"
+          value="Hello, World!"
+        />
+        <button
+          disabled={false}
+          onClick={[Function]}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+</Chatroom>
+`;
+
+exports[`Should send a message 2`] = `
+<Chatroom
+  path="/socket.io/chatroom"
+  token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IlRlc3QgVXNlciJ9._yeRUydnLTkOqBHic55jrTprT5OgaCsP6n_oEcdQyq4"
+  uri="http://[::]:7000"
+>
+  <div
+    className="chatroom__container"
+  >
+    <div
+      className="chatroom__sidebar"
+    >
+      <p
+        className="chatroom__title"
+      >
+        Chat Room
+      </p>
+      <p
+        className="chatroom__subtitle"
+      >
+        Members: 
+        1
+      </p>
+      <div
+        className="chatroom__members"
+      >
+        <div
+          className="chatroom__member"
+          key="0"
+        >
+          Test User
+        </div>
+      </div>
+    </div>
+    <div
+      className="chatroom__main"
+    >
+      <div
+        className="chatoom__status-container"
+      >
+        <div
+          className="chatoom__status-icon chatoom__status-icon--green"
+        />
+        <span
+          className="chatoom__status"
+        >
+          online
+        </span>
+      </div>
+      <Chat
+        className="chatroom__chat"
+        messages={
+          Array [
+            Object {
+              "notification": true,
+              "text": "Welcome Test User",
+            },
+            Object {
+              "text": "Hello, World!",
+              "username": "Test User",
+            },
+          ]
+        }
+        username="Test User"
+      >
+        <div
+          className="chatroom__chat"
+        >
+          <Message
+            isError={false}
+            isMe={false}
+            isNotification={true}
+            key="0"
+            text="Welcome Test User"
+          >
+            <p
+              className="chatroom__notification"
+            >
+              Welcome Test User
+            </p>
+          </Message>
+          <Message
+            isError={false}
+            isMe={true}
+            isNotification={false}
+            key="1"
+            text="Hello, World!"
+            username="Test User"
+          >
+            <div
+              className="chatroom__message chatroom__message--me"
+            >
+              <h5>
+                Test User
+              </h5>
+              <p>
+                Hello, World!
+              </p>
+            </div>
+          </Message>
+        </div>
+      </Chat>
+      <div
+        className="chatroom__input"
+      >
+        <input
+          autoFocus={true}
+          disabled={false}
+          maxLength={500}
+          onChange={[Function]}
+          onKeyPress={[Function]}
+          placeholder="Type a message"
+          type="text"
+          value=""
+        />
+        <button
+          disabled={false}
+          onClick={[Function]}
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+</Chatroom>
+`;

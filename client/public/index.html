@@ -1,12 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Chatroom</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Chatroom</title>
+		<style>
+			html, body {
+				height: 100%;
+				margin: 0;
+			}
+			#container {
+				display: flex;
+				flex-direction: column;
+				align-items: stretch;
+				height: 100%;
+			}
+			#header {
+				height: 3rem;
+				background-color: black;
+				text-align: center;
+				color: white;
+				line-height: 3rem;
+			}
+			#root {
+				flex-grow: 1;
+				margin: 2rem;
+				border: 0.25rem black solid;
+			}
+		</style>
+	</head>
+	<body>
+		<noscript>You need to enable JavaScript to run this app.</noscript>
+		<div id="container">
+			<div id="header">HEADER</div>
+			<div id="root"/>
+		</div>
+	</body>
 </html>

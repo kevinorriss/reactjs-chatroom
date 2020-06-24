@@ -13,5 +13,6 @@ module.exports = {
                 targets: { node: 'current' }
             }
         ]
-    ]
+    ],
+    plugins: ['react-css-modules-transform']
 }
