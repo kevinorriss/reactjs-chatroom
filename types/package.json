@@ -1,8 +1,0 @@
-{
-  "name": "@kevinorriss/chatroom-types",
-  "version": "1.0.0",
-  "main": "index.js",
-  "author": "Kevin Orriss <kevinorriss@gmail.com>",
-  "license": "MIT",
-  "private": false
-}

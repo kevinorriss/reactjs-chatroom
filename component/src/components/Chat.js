@@ -9,7 +9,8 @@ class Chat extends React.Component {
             <div {...props}>
                 {messages.map((m, index) => 
                     <Message key={index}
-                        isNotification={m.notification}
+                        isNotification={m.notification || false}
+                        isError={m.error || false}
                         isMe={m.username===username}
                         username={m.username}
                         text={m.text} />

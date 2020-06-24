@@ -1,30 +1,22 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import io from 'socket.io-client'
-import { EventType, ErrorType } from '@kevinorriss/chatroom-types'
-import Chat from './Chat'
+import Chat from './components/Chat'
 import './styles.css'
 
 class Chatroom extends React.Component {
     constructor(props) {
         super(props)
 
-        // bind the functions
-        this.setStatus = this.setStatus.bind(this)
-        this.onConnect = this.onConnect.bind(this)
-        this.onRoomData = this.onRoomData.bind(this)
-        this.onUserJoined = this.onUserJoined.bind(this)
-        this.onMessage = this.onMessage.bind(this)
-        this.onUserLeft = this.onUserLeft.bind(this)
-        this.onTextChange = this.onTextChange.bind(this)
-        this.sendMessage = this.sendMessage.bind(this)
-
         // get a reference to the text input
         this.messageInput = React.createRef()
 
         // initialise the state
         this.state = {
+            username: undefined,
             usernames: [],
             messages: [],
+            title: props.title || 'Chat Room',
             text: '',
             inputDisabled: true,
             error: undefined,
@@ -40,24 +32,24 @@ class Chatroom extends React.Component {
         this.socket = io(this.props.uri, { path: this.props.path, transports: ['websocket'] })
 
         // setup socketio event listeners
-        this.socket.on('connect', this.onConnect)
-        this.socket.on('authenticated', () => { this.setStatus('orange', 'waiting for room data...') })
-        this.socket.on('connect_error', () => { this.setStatus('red', 'connection error') })
-        this.socket.on('connect_timeout', () => { this.setStatus('red', 'connection timeout') })
-        this.socket.on('error', (error) => { this.setStatus('red', 'error'); console.error(error) })
-        this.socket.on('reconnect', () => { this.setStatus('green', 'reconnected') })
-        this.socket.on('reconnect_attempt', (attempt) => { this.setStatus('orange', `reconnection attempt ${attempt}...`) })
-        this.socket.on('reconnecting', (attempt) => { this.setStatus('orange', `reconnection attempt ${attempt}...`) })
-        this.socket.on('reconnect_error', () => { this.setStatus('red', 'reconnection error') })
-        this.socket.on('reconnect_failed', () => { this.setStatus('red', 'reconnection error') })
-        this.socket.on('disconnect', () => { this.setStatus('red', 'disconnected') })
-        this.socket.on('unauthorized', () => { this.setStatus('red', 'unauthorized') })
+        this.socket.on('connect', () => { this.onConnect() })
+        this.socket.on('authenticated', () => { this.onAuthenticated() })
+        this.socket.on('connect_error', () => { this.onConnectError() })
+        this.socket.on('connect_timeout', () => { this.onConnectTimeout() })
+        this.socket.on('error', (error) => { this.onError(error) })
+        this.socket.on('reconnect', () => { this.onReconnect() })
+        this.socket.on('reconnect_attempt', (attempt) => { this.onReconnectAttempt(attempt) })
+        this.socket.on('reconnecting', (attempt) => { this.onReconnecting(attempt) })
+        this.socket.on('reconnect_error', () => { this.onReconnectError() })
+        this.socket.on('reconnect_failed', () => { this.onReconnectFailed() })
+        this.socket.on('disconnect', () => { this.onDisconnect() })
+        this.socket.on('unauthorized', () => { this.onUnauthorized() })
 
         // setup chatroom event listeners
-        this.socket.on(EventType.ROOM_DATA, this.onRoomData)
-        this.socket.on(EventType.USER_JOINED, this.onUserJoined)
-        this.socket.on(EventType.USER_LEFT, this.onUserLeft)
-        this.socket.on(EventType.MESSAGE, this.onMessage)
+        this.socket.on('ROOM_DATA', (data) => { this.onRoomData(data) })
+        this.socket.on('USER_JOINED', (data) => { this.onUserJoined(data) })
+        this.socket.on('USER_LEFT', (data) => { this.onUserLeft(data) })
+        this.socket.on('MESSAGE', (message) => { this.onMessage(message) })
     }
 
     onConnect() {
@@ -68,10 +60,22 @@ class Chatroom extends React.Component {
         })
     }
 
+    onAuthenticated() { this.setStatus('orange', 'waiting for room data...') }
+    onConnectError() { this.setStatus('red', 'connection error') }
+    onConnectTimeout() { this.setStatus('red', 'connection timeout') }
+    onError() { this.setStatus('red', 'error') }
+    onReconnect() { this.setStatus('green', 'reconnected') }
+    onReconnectAttempt(attempt) { this.setStatus('orange', `reconnection attempt ${attempt}...`) }
+    onReconnecting(attempt) { this.setStatus('orange', `reconnection attempt ${attempt}...`) }
+    onReconnectError() { this.setStatus('red', 'reconnection error') }
+    onReconnectFailed() { this.setStatus('red', 'reconnection error') }
+    onDisconnect() { this.setStatus('red', 'disconnected') }
+
     onRoomData(data) {
         // set the usernames in the state
         this.setState((prevState) => ({
             ...prevState,
+            username: data.username,
             usernames: data.room.usernames,
             messages: prevState.messages.concat({ notification: true, text: `Welcome ${data.username}` })
         }), this.setStatus('green', 'online'))
@@ -84,6 +88,20 @@ class Chatroom extends React.Component {
             inputDisabled: icon !== 'green',
             status: { icon, text }
         }), callback)
+    }
+
+    onUnauthorized(error) {
+
+        // if we have an error object with a message
+        if (typeof error === 'object' && typeof error.message === 'string') {
+            
+            this.setState((prevState) => ({
+                ...prevState,
+                messages: prevState.messages.concat({ error: true, text: `Unauthorized: ${error.message}` })
+            }))
+        }
+
+        this.setStatus('red', 'unauthorized')
     }
 
     onUserJoined({username}) {
@@ -129,7 +147,7 @@ class Chatroom extends React.Component {
         }))
 
         // send the message and await the callback
-        this.socket.emit(EventType.MESSAGE, { userId: this.state.userId, text: this.state.text }, (data = {}) => {
+        this.socket.emit('MESSAGE', { userId: this.state.userId, text: this.state.text }, (data = {}) => {
             if (data.error) {
                 this.setStatus('red', 'message error')
                 return
@@ -151,7 +169,7 @@ class Chatroom extends React.Component {
         return (
             <div className="chatroom__container">
                 <div className="chatroom__sidebar">
-                    <p className="chatroom__title">ORRISS.IO CHAT ROOM</p>
+                    <p className="chatroom__title">{this.state.title}</p>
                     <p className="chatroom__subtitle">Members: {this.state.usernames.length}</p>
                     <div className="chatroom__members">
                         {this.state.usernames.map((username, index) => (
@@ -164,23 +182,30 @@ class Chatroom extends React.Component {
                         <div className={`chatoom__status-icon chatoom__status-icon--${this.state.status.icon}`} />
                         <span className="chatoom__status">{this.state.status.text}</span>
                     </div>
-                    <Chat className="chatroom__chat" messages={this.state.messages} username={this.props.username}/>
+                    <Chat className="chatroom__chat" messages={this.state.messages} username={this.state.username}/>
                     <div className="chatroom__input">
                         <input onKeyPress={(e) => { if (e.key === "Enter") this.sendMessage() }}
                             type="text"
                             placeholder="Type a message"
                             disabled={this.state.inputDisabled}
-                            onChange={this.onTextChange}
+                            onChange={(e) => { this.onTextChange(e) }}
                             value={this.state.text}
                             maxLength={500}
                             autoFocus={true}
                             ref={this.messageInput} />
-                        <button onClick={this.sendMessage} disabled={this.state.inputDisabled}>Send</button>
+                        <button onClick={() => { this.sendMessage() }} disabled={this.state.inputDisabled}>Send</button>
                     </div>
                 </div>
             </div>
         )
     }
+}
+
+Chatroom.propTypes = {
+    token: PropTypes.string.isRequired,
+    uri: PropTypes.string.isRequired,
+    path: PropTypes.string.isRequired,
+    title: PropTypes.string
 }
 
 export default Chatroom

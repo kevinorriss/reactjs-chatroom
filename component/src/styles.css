@@ -1,7 +1,7 @@
 .chatroom__container {
     display: flex;
     flex-direction: row;
-    min-height: 100vh;
+    height: 100%;
     font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -108,7 +108,10 @@
     margin: 0.75rem 0 0 0;
     color: gray;
     text-align: center;
+}
 
+.chatroom__notification--error {
+    color: red;
 }
 
 .chatroom__message {

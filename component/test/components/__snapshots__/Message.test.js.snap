@@ -1,0 +1,51 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Should render error message correctly 1`] = `
+<p
+  className="chatroom__notification chatroom__notification--error"
+>
+  This is an error
+</p>
+`;
+
+exports[`Should render error when message is both notification and error 1`] = `
+<p
+  className="chatroom__notification chatroom__notification--error"
+>
+  This is a notification and an error
+</p>
+`;
+
+exports[`Should render notification message correctly 1`] = `
+<p
+  className="chatroom__notification"
+>
+  This is a notification
+</p>
+`;
+
+exports[`Should render received message correctly 1`] = `
+<div
+  className="chatroom__message"
+>
+  <h5>
+    Test User
+  </h5>
+  <p>
+    This is a received message
+  </p>
+</div>
+`;
+
+exports[`Should render send message correctly 1`] = `
+<div
+  className="chatroom__message chatroom__message--me"
+>
+  <h5>
+    Myself
+  </h5>
+  <p>
+    This is a sent message
+  </p>
+</div>
+`;

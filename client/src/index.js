@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
 import jwt from 'jsonwebtoken'
-import Chatroom from '@kevinorriss/chatroom'
+import Chatroom from '@kevinorriss/chatroom-component'
 
 /**
  * Returns a key/value array of URL params
@@ -14,8 +14,8 @@ function getUrlVars() {
     return vars;
 }
 
-var userId = parseInt(getUrlVars()["id"]) || 1
-var token = jwt.sign({ userId }, 'thisismychatroomsecret')
+var username = getUrlVars()["username"] || 'Developer'
+var token = jwt.sign({ username }, 'thisismychatroomsecret')
 
 ReactDOM.render(
     <Chatroom

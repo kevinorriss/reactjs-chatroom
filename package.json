@@ -2,10 +2,10 @@
   "name": "reactjs-chatroom",
   "version": "1.0.0",
   "scripts": {
-    "component": "yarn --cwd component run dev",
-    "socket": "yarn --cwd socket server",
-    "client": "yarn --cwd client start",
-    "dev": "concurrently \"yarn run socket\" \"yarn run component\" \"yarn run client\""
+    "component":  "npm run --prefix component dev",
+    "server":     "npm run --prefix server start",
+    "client":     "npm run --prefix client start",
+    "dev": "concurrently \"npm run server\" \"npm run component\" \"npm run client\""
   },
   "author": "Kevin Orriss <kevinorriss@gmail.com>",
   "license": "MIT",
