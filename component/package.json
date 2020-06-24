@@ -1,6 +1,6 @@
 {
   "name": "@kevinorriss/chatroom-component",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "build/Chatroom.js",
   "scripts": {
@@ -39,6 +39,7 @@
     "rollup-plugin-terser": "^6.1.0"
   },
   "dependencies": {
+    "autoscroll-react": "^3.2.0",
     "react": "^16.13.0",
     "react-dom": "^16.13.1",
     "socket.io-client": "^2.3.0"
