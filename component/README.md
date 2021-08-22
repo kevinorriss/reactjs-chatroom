@@ -4,7 +4,7 @@ A ReactJS chatroom component using SocketIO
 
 ## Prerequisites
 
-* [@kevinorriss/chatroom-server 1.0.3] - A SocketIO server to accompany the chatroom component
+* [@kevinorriss/chatroom-server 1.0.4] - A SocketIO server to accompany the chatroom component
 
 ## Installing
 

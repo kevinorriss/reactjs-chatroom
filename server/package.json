@@ -1,7 +1,7 @@
 {
   "name": "@kevinorriss/chatroom-server",
-  "version": "1.0.3",
-  "main": "src/Socket.js",
+  "version": "1.0.4",
+  "main": "src/ChatroomServer.js",
   "author": "Kevin Orriss <kevinorriss@gmail.com>",
   "license": "MIT",
   "scripts": {
