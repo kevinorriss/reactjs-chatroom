@@ -1,5 +1,5 @@
-const socketio = require('socket.io')
-var socketioJwt = require('socketio-jwt')
+const socketio = require('socket.io');
+var socketioJwt = require('socketio-jwt');
 
 class ChatroomServer
 {
@@ -26,7 +26,7 @@ class ChatroomServer
                 // if the token doesn't contain the username
                 if (typeof socket.decoded_token.username === 'undefined') {    
                     // emit an unauthorized event then disconnect
-                    socket.emit('unauthorized', {message: 'missing username'} )
+                    socket.emit('unauthorized', { message: 'missing username' } )
                     socket.disconnect()
                 
                 // valid token, authenticated

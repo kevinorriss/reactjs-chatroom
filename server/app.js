@@ -1,5 +1,5 @@
 const express = require('express')
-const ChatroomServer = require('../src/ChatroomServer')
+const ChatroomServer = require('./src/ChatroomServer')
 const http = require('http')
 
 // create the express server

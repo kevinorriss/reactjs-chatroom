@@ -58,7 +58,7 @@ afterEach(() => {
 })
 
 describe('connect', () => {
-    test('Should call authenticated event with valid token', async (done) => {
+    test('Should call authenticated event with valid token', (done) => {
 
         // connect a client and wait for authenticated message
         const onAuthenticated = jest.fn()
@@ -70,7 +70,7 @@ describe('connect', () => {
         })
     })
 
-    test('Should disconnect with incorrect secret', async (done) => {
+    test('Should disconnect with incorrect secret', (done) => {
         // connect a client with an invalid key
         const onUnauthorized = jest.fn()
         clientSocket1 = connect({ username: USER_1, key: `${SECRET}123`}).on('unauthorized', onUnauthorized)
@@ -89,7 +89,7 @@ describe('connect', () => {
             })
     })
 
-    test('Should receive unauthorized event when missing username', async (done) => {
+    test('Should receive unauthorized event when missing username', (done) => {
         
         // connect a client without providing a username
         clientSocket1 = connect({}).on('unauthorized', (data) => {
@@ -102,7 +102,7 @@ describe('connect', () => {
         })
     })
 
-    test('Should disconnect client with missing username', async (done) => {
+    test('Should disconnect client with missing username', (done) => {
         
         // connect a client without providing a username
         clientSocket1 = connect({}).on('disconnect', () => {
@@ -117,7 +117,7 @@ describe('connect', () => {
 })
 
 describe('authenticated', () => {
-    test('Should broadcast user joined to existing users', async (done) => {
+    test('Should broadcast user joined to existing users', (done) => {
         
         // connect the client and await authentication
         const onUserJoined = jest.fn()
@@ -139,7 +139,7 @@ describe('authenticated', () => {
         })
     })
 
-    test('Should skip broadcasting user joined if user already in chatroom (in another tab)', async (done) => {
+    test('Should skip broadcasting user joined if user already in chatroom (in another tab)', (done) => {
         
         const onUserJoined1 = jest.fn()
         const onUserJoined2 = jest.fn()
@@ -162,7 +162,7 @@ describe('authenticated', () => {
         })
     })
 
-    test('Should add connected user to server array', async (done) => {
+    test('Should add connected user to server array', (done) => {
         // connect the client and await authentication
         const onAuthenticated = jest.fn()
         clientSocket1 = connect({username: USER_1}).on('authenticated', onAuthenticated)
@@ -184,7 +184,7 @@ describe('authenticated', () => {
             })
     })
 
-    test('Should receive room data after authenticating', async (done) => {
+    test('Should receive room data after authenticating', (done) => {
         // connect a client
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', (data) => {
             
@@ -200,7 +200,7 @@ describe('authenticated', () => {
     })
 
     // room data should remove duplicate usernames
-    test('Should remove duplicate usernames from room data', async (done) => {
+    test('Should remove duplicate usernames from room data', (done) => {
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
             clientSocket2 = connect({username: USER_1}).on('ROOM_DATA', () => {
                 clientSocket3 = connect({username: USER_2}).on('ROOM_DATA', (data) => {
@@ -236,7 +236,7 @@ describe('authenticated', () => {
 })
 
 describe('message', () => {
-    test('Should receive own message', async (done) => {
+    test('Should receive own message', (done) => {
         // connect the user
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
             // send a message and wait for the callback
@@ -250,7 +250,7 @@ describe('message', () => {
         })
     })
 
-    test('Should receive message from other user', async (done) => {
+    test('Should receive message from other user', (done) => {
         // connect the users
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
             clientSocket2 = connect({username: USER_2}).on('ROOM_DATA', () => {
@@ -270,7 +270,7 @@ describe('message', () => {
         })
     })
 
-    test('Should handle not finding the user from socket ID', async (done) => {
+    test('Should handle not finding the user from socket ID', (done) => {
         // connect the user and wait for room data (we know)
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
 
@@ -312,7 +312,7 @@ describe('message', () => {
         })
     })
 
-    test('Should trim text', async (done) => {
+    test('Should trim text', (done) => {
         // connect user to the server
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
             // mock the message event
@@ -333,7 +333,7 @@ describe('message', () => {
         })
     })
 
-    test('Should ignore empty text', async (done) => {
+    test('Should ignore empty text', (done) => {
         // connect user to the server
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
             // mock the message event
@@ -362,7 +362,7 @@ describe('message', () => {
         })
     })
 
-    test('Should handle internal server error', async (done) => {
+    test('Should handle internal server error', (done) => {
         // connect user to the server
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
             // mock the user array find method to throw an error
@@ -401,7 +401,7 @@ describe('message', () => {
 })
 
 describe('disconnect', () => {
-    test('Should remove the user from the array', async (done) => {
+    test('Should remove the user from the array', (done) => {
 
         // connect user to the server and await room data
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
@@ -427,7 +427,7 @@ describe('disconnect', () => {
         })
     })
 
-    test('Should notify room of user leaving', async (done) => {
+    test('Should notify room of user leaving', (done) => {
 
         // connect the users
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {
@@ -451,7 +451,7 @@ describe('disconnect', () => {
         })
     })
 
-    test('Should not notify room when closing a duplicate connection', async (done) => {
+    test('Should not notify room when closing a duplicate connection', (done) => {
 
         // connect the users
         clientSocket1 = connect({username: USER_1}).on('ROOM_DATA', () => {

@@ -1,41 +1,20 @@
-// mock autoscroll that simply returns the Chat component
-jest.mock('autoscroll-react', () => { return (component) => { return component } })
-
 import Chatroom from '../src/Chatroom'
-import ChatroomServer from '@kevinorriss/chatroom-server'
-import http  from 'http'
 import jwt from 'jsonwebtoken'
+import MockedSocket from 'socket.io-mock'
 
 const SECRET = 'testsecret'
 const PATH = '/socket.io/chatroom'
 const TOKEN = jwt.sign({ username: 'Test User'}, SECRET, { noTimestamp: true })
 const TITLE = 'Test Chat Room'
+const CHATROOM_URL = 'http://localhost:7000'
 
-let httpServer
-let chatServer
-let chatroomUri
-let wrapper
+let wrapper, socket
 
-// setup a socket before the tests start
-beforeAll(() => {
-    httpServer = http.createServer().listen(7000)
-    const httpServerAddr = httpServer.address()
-    chatroomUri = `http://[${httpServerAddr.address}]:${httpServerAddr.port}`
-    chatServer = new ChatroomServer(httpServer, PATH, SECRET)
-})
+// mock autoscroll that simply returns the Chat component
+jest.mock('autoscroll-react', () => { return (component) => { return component } })
 
-// clean up the server after each test
-afterEach(() => {
-    // clear the users array
-    chatServer.users = []
-
-    // disconnect all sockets on the server
-    Object.values(chatServer.io.of("/").connected).forEach(function(s) { s.disconnect(true) })
-})
-
-// close the server once the tests are complete
-afterAll(() => {
-    httpServer.close()
+jest.mock('socket.io-client', () => {
+    return () => { return new MockedSocket() }
 })
 
 test('Should render initial state', () => {
@@ -43,7 +22,7 @@ test('Should render initial state', () => {
     jest.spyOn(Chatroom.prototype, 'componentDidMount').mockImplementationOnce(() => { })
 
     // should render initial chatroom state
-    expect(shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} />)).toMatchSnapshot()
+    expect(shallow( <Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)).toMatchSnapshot()
 })
 
 test('Should apply custom title', () => {
@@ -52,7 +31,7 @@ test('Should apply custom title', () => {
     jest.spyOn(Chatroom.prototype, 'componentDidMount').mockImplementationOnce(() => { })
 
     // create the chatroom, passing in a title
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} title={TITLE} /> )
+    wrapper = shallow( <Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} title={TITLE} /> )
 
     // force the wrapper to update
     wrapper.update()
@@ -61,104 +40,328 @@ test('Should apply custom title', () => {
     expect(wrapper).toMatchSnapshot()
 })
 
-test('Should connect on mount', (done) => {
-    // mount a chatroom component
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} /> )
+test('Should render correctly on connect', (done) => {
+    // mount the chatroom
+    wrapper = shallow( <Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} /> )
+    socket = wrapper.instance().socket
 
-    // listen to the wrapper socket connect event
-    wrapper.instance().socket.on('connect', () => {
-
-        // wait a little while
-        setTimeout(() => {
-            
-            // check the status values as "online"
-            expect(wrapper.state('status')).toEqual({ icon: 'green', text: 'online' })
-
-            // force the wrapper to update
-            wrapper.update()
-
-            // expect the initial "online" snapshot to match
-            expect(wrapper).toMatchSnapshot()
-
-            // tell jest we're done
-            done()
-        }, 50)
-    })
-})
-
-test('Should get connection error on incorrect URI', (done) => {
-
-    // mock the connect error event
-    jest.spyOn(Chatroom.prototype, 'onConnectError').mockImplementationOnce(() => {
-        // tell jest we're done
-        done()
-    })
-
-    // mount the chatroom with an incorrect URI
-    wrapper = shallow( <Chatroom token={TOKEN} uri={'incorrect'} path={PATH} /> )
-})
-
-test('Should get connection error on incorrect path', (done) => {
-
-    // mock the connect error event
-    jest.spyOn(Chatroom.prototype, 'onConnectError').mockImplementationOnce(() => {
-        // tell jest we're done
-        done()
-    })
-
-    // mount the chatroom with an incorrect URI
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={'incorrect'} /> )
-})
-
-test('Should reject incorrect token', (done) => {
-    // mount the chatroom with an invald token
-    const invalid_token = jwt.sign({ username: 'Test User'}, 'incorrect secret', { noTimestamp: true })
-    wrapper = shallow( <Chatroom token={invalid_token} uri={chatroomUri} path={PATH} /> )
-
-    // wait for the socket to receive an unauthorised event
-    wrapper.instance().socket.on('unauthorized', () => {
-
-        // force the wrapper to update
-        wrapper.update()
-
-        // check the status values as "online"
-        expect(wrapper.state('status')).toEqual({ icon: 'red', text: 'unauthorized' })
-
-        // expect the wrapper to match the snapshot
+    // wait for the socket to receive a connect event
+    socket.on('connect', () => {
+        // expect the initial "authenticating" snapshot to match
         expect(wrapper).toMatchSnapshot()
 
         // tell jest we're done
         done()
     })
+
+    // emit a connect message
+    socket.socketClient.emit('connect')
 })
 
-test('Should handle new user joining', (done) => {
-    // mount the chatroom and get its instance
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} /> )
-    const instance = wrapper.instance()
+test('Should render correctly on connection error', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} /> )
+    socket = wrapper.instance().socket
 
-    // wait to receive room data
-    instance.socket.on('ROOM_DATA', () => {
-        // call the user joined event
-        instance.onUserJoined({ username: 'New User' })
-
-        // force the wrapper to update
-        wrapper.update()
-
-        // expect the state usernames to contain both users
-        expect(wrapper.state('usernames')).toEqual(['Test User', 'New User'])
-
-        // expect the chatroom to match the snapshot
+    // wait for the socket to receive a connect_error event
+    socket.on('connect_error', () => {
+        // expect the "connection error" snapshot to match
         expect(wrapper).toMatchSnapshot()
 
         // tell jest we're done
         done()
     })
+
+    // emit a connect_error message
+    socket.socketClient.emit('connect_error')
 })
 
+test('Should render correctly on authenticated', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a authenticated event
+    socket.on('authenticated', () => {
+        // expect the "waiting for room data..." snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a authenticated message
+    socket.socketClient.emit('authenticated')
+})
+
+test('Should render correctly on timeout', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a connect_timeout event
+    socket.on('connect_timeout', () => {
+        // expect the "waiting for room data..." snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a connect_timeout message
+    socket.socketClient.emit('connect_timeout')
+})
+
+test('Should render correctly on error', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a error event
+    socket.on('error', () => {
+        // expect the "waiting for room data..." snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a error message
+    socket.socketClient.emit('error')
+})
+
+test('Should render correctly on reconnect', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a reconnect event
+    socket.on('reconnect', () => {
+        // expect the "reconnected" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a reconnect message
+    socket.socketClient.emit('reconnect')
+})
+
+test('Should render correctly on reconnect_attempt', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a reconnect_attempt event
+    socket.on('reconnect_attempt', () => {
+        // expect the "reconnected" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a reconnect message (3rd attempt)
+    socket.socketClient.emit('reconnect_attempt', 3)
+})
+
+test('Should render correctly on reconnecting', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a reconnecting event
+    socket.on('reconnecting', () => {
+        // expect the "reconnection attempt X..." snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a reconnecting message (3rd attempt)
+    socket.socketClient.emit('reconnecting', 3)
+})
+
+test('Should render correctly on reconnect_error', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a reconnect_error event
+    socket.on('reconnect_error', () => {
+        // expect the "reconnection error" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a reconnect_error message
+    socket.socketClient.emit('reconnect_error')
+})
+
+test('Should render correctly on reconnect_failed', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a reconnect_failed event
+    socket.on('reconnect_failed', () => {
+        // expect the "reconnection error" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a reconnect_failed message
+    socket.socketClient.emit('reconnect_failed')
+})
+
+test('Should render correctly on disconnect', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a disconnect event
+    socket.on('disconnect', () => {
+        // expect the "disconnected" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a disconnect message
+    socket.socketClient.emit('disconnect')
+})
+
+test('Should render correctly on unauthorized', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a unauthorized event
+    socket.on('unauthorized', () => {
+        // expect the "disconnected" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a unauthorized message
+    socket.socketClient.emit('unauthorized')
+})
+
+test('Should render correctly on unauthorized with error', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a unauthorized event
+    socket.on('unauthorized', () => {
+        // expect the "disconnected" snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit a unauthorized message
+    socket.socketClient.emit('unauthorized', { message: 'test error' })
+})
+
+test('Should render room data', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a room data event
+    socket.on('ROOM_DATA', () => {
+        // expect the snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit the room data
+    socket.socketClient.emit('ROOM_DATA', { 
+        username: 'Test User',
+        room: {
+            usernames: ['Test User 1', 'Test User 2', 'Test User 3']
+        }
+    })
+})
+
+test('Should render user joining', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a user joined event
+    socket.on('USER_JOINED', () => {
+        // expect the snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit the joined user
+    socket.socketClient.emit('USER_JOINED', {
+        username: 'Test User',
+        createdAt: new Date(2021,8,30,22,15,30,100).getTime()
+    })
+})
+
+test('Should render user leaving', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a user left event
+    socket.on('USER_LEFT', () => {
+        // expect the snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit the joined user
+    socket.socketClient.emit('USER_LEFT', {
+        username: 'Test User',
+        createdAt: new Date(2021, 8, 30, 22, 15, 30, 100).getTime()
+    })
+})
+
+test('Should render message', (done) => {
+    // mount the chatroom
+    wrapper = shallow(<Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} />)
+    socket = wrapper.instance().socket
+
+    // wait for the socket to receive a message event
+    socket.on('MESSAGE', () => {
+        // expect the snapshot to match
+        expect(wrapper).toMatchSnapshot()
+
+        // tell jest we're done
+        done()
+    })
+
+    // emit the joined user
+    socket.socketClient.emit('MESSAGE', { userId: 1, text: 'This is a test message' })
+})
+
+/*
+TODO
 test ('Should handle multiple clients of the same username', (done) => {
     // mount the chatroom and get its instance
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} /> )
+    wrapper = shallow( <Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} /> )
     const instance = wrapper.instance()
 
     // wait to receive room data
@@ -189,62 +392,9 @@ test ('Should handle multiple clients of the same username', (done) => {
     })
 })
 
-test('Should handle user leaving', (done) => {
-    // mount the chatroom and get its instance
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} /> )
-    const instance = wrapper.instance()
-
-    // wait to receive room data
-    instance.socket.on('ROOM_DATA', () => {
-        // call the user joined event
-        instance.onUserJoined({ username: 'New User' })
-
-        // expect the state usernames to contain both users
-        expect(wrapper.state('usernames')).toEqual(['Test User', 'New User'])
-
-        // call the user left event
-        instance.onUserLeft({ username: 'New User' })
-
-        // force the wrapper to update
-        wrapper.update()
-
-        // expect the state usernames to contain both users
-        expect(wrapper.state('usernames')).toEqual(['Test User'])
-
-        // expect the chatroom to match the snapshot
-        expect(wrapper).toMatchSnapshot()
-
-        // tell jest we're done
-        done()
-    })
-})
-
-test('Should render received message', (done) => {
-    wrapper = shallow( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} /> )
-    const instance = wrapper.instance()
-
-    // wait to receive room data
-    instance.socket.on('ROOM_DATA', () => {
-
-        // call the message event
-        instance.onMessage({
-            username: 'New User',
-            text: 'Hello Tester!'
-        })
-
-        // force the wrapper to update
-        wrapper.update()
-
-        // expect the chatroom to match the snapshot
-        expect(wrapper).toMatchSnapshot()
-
-        // tell jest we're done
-        done()
-    })
-})
-
+TODO
 test('Should send a message', (done) => {
-    wrapper = mount( <Chatroom token={TOKEN} uri={chatroomUri} path={PATH} /> )
+    wrapper = mount( <Chatroom token={TOKEN} uri={CHATROOM_URL} path={PATH} /> )
     const instance = wrapper.instance()
 
     // wait to receive room data
@@ -282,3 +432,4 @@ test('Should send a message', (done) => {
         })
     })
 })
+*/

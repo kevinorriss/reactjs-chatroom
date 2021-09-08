@@ -36,14 +36,14 @@ class Chatroom extends React.Component {
         this.socket.on('authenticated', () => { this.onAuthenticated() })
         this.socket.on('connect_error', () => { this.onConnectError() })
         this.socket.on('connect_timeout', () => { this.onConnectTimeout() })
-        this.socket.on('error', (error) => { this.onError(error) })
+        this.socket.on('error', () => { this.onError() })
         this.socket.on('reconnect', () => { this.onReconnect() })
         this.socket.on('reconnect_attempt', (attempt) => { this.onReconnectAttempt(attempt) })
         this.socket.on('reconnecting', (attempt) => { this.onReconnecting(attempt) })
         this.socket.on('reconnect_error', () => { this.onReconnectError() })
         this.socket.on('reconnect_failed', () => { this.onReconnectFailed() })
         this.socket.on('disconnect', () => { this.onDisconnect() })
-        this.socket.on('unauthorized', () => { this.onUnauthorized() })
+        this.socket.on('unauthorized', (error) => { this.onUnauthorized(error) })
 
         // setup chatroom event listeners
         this.socket.on('ROOM_DATA', (data) => { this.onRoomData(data) })

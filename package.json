@@ -1,11 +1,11 @@
 {
   "name": "reactjs-chatroom",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "scripts": {
-    "component": "npm run --prefix component dev",
+    "component": "npm run --prefix component start",
     "server": "npm run --prefix server start",
     "client": "npm run --prefix client start",
-    "dev": "concurrently \"npm run server\" \"npm run component\" \"npm run client\""
+    "start": "concurrently \"npm run server\" \"npm run component\" \"npm run client\""
   },
   "author": "Kevin Orriss <kevinorriss@gmail.com>",
   "license": "MIT",

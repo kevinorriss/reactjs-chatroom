@@ -1,22 +1,26 @@
 {
   "name": "@kevinorriss/chatroom-server",
-  "version": "1.0.4",
+  "version": "2.0.0",
   "main": "src/ChatroomServer.js",
+  "files": [ "src", "node_modules" ],
   "author": "Kevin Orriss <kevinorriss@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "nodemon dev/app.js",
-    "test": "jest --watchAll"
+    "start": "nodemon app.js",
+    "test": "jest --watchAll --detectOpenHandles"
   },
   "private": false,
   "dependencies": {
-    "socket.io": "^2.3.0",
-    "socketio-jwt": "^4.5.0"
+    "socket.io": "^2.4.1",
+    "socketio-jwt": "^4.6.2"
+  },
+  "peerDependencies": {
+    "express": "^4.17.1"
   },
   "devDependencies": {
-    "express": "^4.17.1",
+    "jest": "^27.1.0",
     "nodemon": "^2.0.2",
-    "socket.io-client": "^2.3.0"
+    "socket.io-client": "file:../component/node_modules/socket.io-client"
   },
   "repository": {
     "type": "git",
